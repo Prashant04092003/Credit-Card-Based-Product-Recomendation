@@ -1,0 +1,27 @@
+
+---
+
+# 📦 requirements.txt (Engineering Only)
+
+```txt
+# Core
+python-dotenv
+requests
+
+# Backend
+flask
+flask-cors
+
+# Frontend
+streamlit
+plotly
+
+# Data handling (API responses, charts)
+pandas
+numpy
+
+# LLM
+google-generativeai
+
+# Utilities
+tqdm
