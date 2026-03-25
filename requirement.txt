@@ -1,0 +1,13 @@
+streamlit
+pandas
+numpy
+scikit-learn
+lightgbm
+torch
+flask
+flask-cors
+plotly
+google-generativeai
+tqdm
+python-dotenv
+requests
