@@ -1,9 +1,9 @@
 
----
+
 
 # 📦 requirements.txt (Engineering Only)
 
-```txt
+
 # Core
 python-dotenv
 requests
