@@ -1,269 +1,138 @@
-# Credit Card Analytics Dashboard – Engineering Stack
+# Credit360 Enterprise — Credit Card Recommendation & Portfolio Intelligence Platform
 
-This repository contains the **engineering implementation** of a credit card analytics platform designed to deliver portfolio-level insights through a clean, API-driven system.
-
-The focus of this codebase is **system design, backend/frontend integration, and explainable AI delivery**.  
-All **data science, modeling, and experimentation workflows are intentionally out of scope** for this README and are maintained separately.
+Credit360 Enterprise is an institutional-grade credit card portfolio intelligence, customer profiling, and product comparison platform. It operates directly over **24,386,900 transaction records**, **2,000 customer accounts**, and **6,146 issued cards**, benchmarked against a competitive market universe of **354 commercial credit cards**.
 
 ---
 
-## Project Scope
+## Architecture Overview
 
-### What This Repository Covers
-- Flask-based backend APIs for analytics delivery
-- Streamlit-based interactive dashboard
-- Google Gemini integration for narrative business insights
-- API-first communication between frontend and backend
-- Production-style separation of concerns
+```mermaid
+flowchart TD
+    subgraph DataLayer [Data & Storage Engine (Zero Sampling)]
+        A[master_transactions.parquet<br/>24,386,900 Records] --> DB[(DuckDB OLAP Engine<br/>credit360.duckdb)]
+        B[users_master.csv<br/>2,000 Accounts] --> DB
+        C[cards_master.csv<br/>6,146 Cards] --> DB
+        D[commercial_catalog<br/>354 Market Products] --> DB
+    end
 
-### What This Repository Does NOT Cover
-- Model training or experimentation
-- Feature engineering notebooks
-- Offline evaluation or research workflows
-- Model selection or hyperparameter tuning
+    subgraph BackendLayer [FastAPI High-Performance Engine - Port 8000]
+        DB --> BE[FastAPI REST API]
+        BE --> R1[/api/portfolio]
+        BE --> R2[/api/customers]
+        BE --> R3[/api/segments]
+        BE --> R4[/api/cards/similarity]
+        BE --> R5[/api/recommendations]
+        BE --> R6[/api/fraud]
+    end
 
-Those components exist as a separate data science layer and are deliberately excluded from this engineering documentation.
-
----
-
-## System Overview
-
-The application follows a **service-oriented architecture** designed for clarity, scalability, and explainability.
-
-- **Streamlit Frontend**
-  - Consumes analytics and insights via APIs
-- **Flask Backend APIs**
-  - Owns aggregation, business logic, and AI execution
-- **Pre-aggregated Metrics & Business Logic**
-  - Ensures consistent, explainable inputs
-- **Gemini LLM (Narrative Insights Only)**
-  - Produces human-readable interpretations
-
-  ## Repository Structure
-
-The repository is organized to clearly separate engineering concerns from data science workflows.
-
-
+    subgraph FrontendLayer [React UI - Port 5173]
+        R1 & R2 & R3 & R4 & R5 & R6 --> FE[React 18 + Vite + Tailwind CSS]
+        FE --> M1[Portfolio Demographics & Spend]
+        FE --> M2[Customer Profiles 360° & Wallet]
+        FE --> M3[Customer Personas - 6 Macro Groups]
+        FE --> M4[Card Comparison & Market Directory]
+        FE --> M5[Rewards Value Calculator]
+        FE --> M6[Customer Risk Profiles]
+    end
+```
 
 ---
 
-## Engineering Boundaries
+## Core Platform Modules
 
-This repository intentionally enforces **clear boundaries** between engineering and data science:
+### 1. Portfolio Overview & Demographics
+- **Total Population Scale**: Analyzes **$1,064,098,117.16** ($1.06B) in volume across **24,386,900 verified transactions** and **2,000 customer accounts**.
+- **Visual Analytics**: 16 super-categories spend distribution, card network market share (Visa, Mastercard, Amex, Discover), 48-month longitudinal spend growth curve (1996–2020), and category CSV export.
 
-- **Frontend**
-  - Responsible only for visualization and user interaction
-  - Never performs business logic or aggregation
-  - Never calls LLMs directly
+### 2. Customer Profiles (360°) & Digital Wallet
+- **Prominent Command Search**: Instant lookup for any customer across all 2,000 accounts by name or ID (e.g., `Jade Green` / `25`).
+- **Demographics & Financial Metrics**: Experian bureau tiers, FICO scores, annual income, total debt, and debt-to-income (DTI) ratios.
+- **Digital Cards in Wallet**: High-contrast card visualizer rendering brand, cardholder name, credit limits, card age, expiry, and chip security flags.
+- **Recommendations**: Top tailored upgrades ranked by projected net annual reward yield, APR, annual fee, and spend multipliers.
+- **Transaction Audit Ledger**: Filterable, paginated ledger of historical cleared and flagged transactions with CSV export.
 
-- **Backend**
-  - Owns all computation, aggregation, and metric preparation
-  - Serves JSON-only APIs
-  - Acts as the single execution layer for Gemini LLM calls
+### 3. Customer Personas & Spending Patterns (6 Macro Cohorts)
+Maps 100% of accounts (2,000 customers) into exactly 6 distinct, balanced behavioral cohorts:
+1. **Dining & Entertainment Enthusiasts** (343 accounts)
+2. **Retail & Household Essentials Spenders** (300 accounts)
+3. **Affluent Multi-Category & Travel Spenders** (562 accounts)
+4. **Fuel & Daily Commute Power Users** (115 accounts)
+5. **Digital & Lifestyle Natives** (452 accounts)
+6. **Budget-Conscious Conservative Users** (228 accounts)
 
-- **LLM Layer**
-  - Isolated inside `app/llm`
-  - Receives only pre-aggregated metrics
-  - Produces **narrative insights only**
-  - Does not influence decisions or outputs programmatically
+*Clicking any persona card opens a searchable, paginated customer roster. Clicking any customer row opens their full 360° profile.*
 
-- **Data Science Layer**
-  - Exists outside the engineering flow
-  - Produces datasets and models consumed by the backend
-  - Not required to run the application
+### 4. Commercial Card Comparison & Market Directory
+Structured into 3 dedicated sub-tabs:
+- **Head-to-Head Comparison**: Select any two commercial cards to inspect annual fees, base rates, sign-up bonuses, and category reward multipliers side-by-side, with advantage winners highlighted.
+- **Card Substitutes & Alternatives**: Select any of the 354 commercial cards to view its 3 closest market rivals with fee differentials, plus a one-click button to compare head-to-head.
+- **Commercial Card Directory**: Filter and search all 354 commercial cards by network (Visa, Mastercard, American Express, Discover) and annual fee tier ($0 No-Fee, $1–$100, $100+ Premium).
 
----
+### 5. Card Rewards & Value Calculator (What-If Simulator)
+- **Interactive Budget Sliders**: Adjust monthly budget allocations across Dining, Groceries, Travel, Shopping, and Utilities.
+- **Dynamic Yield Simulation**: Recalculates net annual reward value across all 354 commercial cards in real time with interactive yield rankings.
 
-## Why This Structure Matters
-
-This structure mirrors real-world analytics platforms where:
-
-- Dashboards are **consumers**, not calculators
-- APIs are the **source of truth**
-- AI systems are **explainers**, not decision-makers
-- Modeling workflows remain independent of production systems
-
-The result is a system that is:
-- Easier to reason about
-- Easier to debug
-- Easier to evaluate in interviews
-- Easier to extend without breaking assumptions
-
-## Setup & Running the Engineering Stack
-
-This section describes how to run the **engineering system only** — backend APIs, frontend dashboard, and Gemini LLM integration.
-
-Data science notebooks, offline modeling, and experimentation workflows are **not required** to run this application.
+### 6. Customer Risk Profiles & Historical Dispute Activity
+- **Ground-Truth Exposure**: Tracks **29,757 confirmed unauthorized transactions** ($3,231,338.63 total exposure) and **388,431 terminal decline/technical errors**.
+- **Historical Analysis**: Monthly breach trajectory (volume vs. incident count) and category vulnerability ranking with CSV export.
 
 ---
 
-## Prerequisites
+## Design System & Typography
 
-- Python **3.10 or higher**
-- `pip` or `conda`
-- Google Gemini API key
-- Internet access (for Gemini API calls)
+- **Readability**: Built on Google Font **Roboto** with an elevated **18px base root** (`html { font-size: 18px }`). Eliminates cramped 6–8pt micro-fonts.
+- **Color Palette**: Pitch-black canvas (`#000000`), matte carbon panels (`#090A0D`), hairline borders (`#1E2028`), Amex Royal Blue (`#006FCF`), and tabular numbers (`tabular-nums`).
+- **Command Search**: Center-stage 760px wide search bar (`h-14`) with `⌘K` keyboard accelerator and large autocomplete cards.
+- **Terminology**: Ground-truth historical data labeled accurately ("Customer Accounts", "Population Ledger", "Transaction Audit Ledger").
 
 ---
 
-## Installation
+## Quickstart & Setup
 
-### 1. Clone the Repository
+### 1. Prerequisites
+- Python 3.11+
+- Node.js 18+ and npm
 
+### 2. Backend Setup
 ```bash
-git clone <repo-url>
-cd credit-card-recommendation
+# Install Python dependencies
+pip install -r requirements-eng.txt
 
-2. Create a Virtual Environment (Recommended)
+# Start FastAPI server on port 8000
+python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+```
+API Documentation (Swagger UI): [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-Using venv
+### 3. Frontend Setup
+```bash
+# Navigate to frontend and install dependencies
+cd frontend-react
+npm install
 
-python -m venv venv
-source venv/bin/activate      # macOS / Linux
-venv\Scripts\activate         # Windows
+# Start Vite dev server on port 5173
+npm run dev
+```
+Web Console: [http://127.0.0.1:5173](http://127.0.0.1:5173)
 
-Using conda
-
-conda create -n creditcard python=3.10
-conda activate creditcard
-3. Install Engineering Dependencies
-pip install -r requirements.txt
-
-This installs only the engineering stack dependencies (Flask, Streamlit, APIs, Gemini).
-
-Data science dependencies are intentionally separated into
-requirements-ds.txt and are not required to run the system.
-
-Environment Configuration
-
-Create a .env file in the project root:
-
-GEMINI_API_KEY=your_google_gemini_api_key
-
-The backend automatically loads environment variables at startup.
-
-Running the Backend (Flask)
-
-From the project root:
-
-python app/app.py
-
-The backend runs on:
-
-http://127.0.0.1:5050
-
-Responsibilities of the backend:
-
-Serve all KPIs and chart-ready data
-
-Execute business logic and aggregation
-
-Handle all Gemini LLM calls
-
-Act as the single source of truth
-
-Running the Frontend (Streamlit)
-
-Open a new terminal with the same environment activated:
-
-streamlit run frontend/streamlit_app.py
-
-The Streamlit dashboard will open automatically in your browser.
-
-Runtime Flow
-Streamlit Frontend
-↓
-Flask Backend APIs
-↓
-Pre-aggregated Metrics & Business Logic
-↓
-Gemini LLM (Narrative Insights Only)
-
-Key guarantees:
-
-Frontend never computes metrics
-
-Frontend never calls Gemini directly
-
-Backend owns all computation and AI execution
-
-LLM outputs are interpretive only, not decision-making
-
-Common Issues
-Gemini API Errors
-
-Verify the API key is valid
-
-Ensure .env exists and is loaded
-
-Restart the backend after changes
-
-Port Already in Use
-
-Stop existing Flask processes
-
-Or change the port in app/app.py
-
-Streamlit UI Not Updating
-
-Hard refresh the browser
-
-Restart Streamlit
-
-Notes
-
-This setup mirrors real production analytics systems, where:
-
-Dashboards are consumers, not calculators
-
-APIs are the system of record
-
-AI systems explain outcomes, not enforce them
-
-
-## Dependency Management & Requirements Strategy
-
-This repository intentionally separates **engineering dependencies** from **data science / modeling dependencies** to maintain clarity, reproducibility, and production realism.
+### 4. Running Automated Tests
+```bash
+PYTHONPATH=. python3 tests/test_full_integration.py
+```
+Validates all 9 core integration benchmarks:
+- Portfolio summary and category aggregations (24.38M transactions)
+- Customer 360 profile and multi-card wallet extraction
+- 6 macro persona clustering across all 2,000 customer accounts
+- Commercial catalog (354 cards), substitutes, and head-to-head comparison
+- What-If reward yield simulation engine
+- Customer risk profile telemetry and dispute history
 
 ---
 
-## Why Two Requirements Files Exist
+## Tech Stack
 
-### `requirements.txt` — Engineering Stack
-
-This file contains **only what is required to run the application**:
-
-- Flask backend APIs
-- Streamlit frontend
-- API communication
-- Gemini LLM integration
-- Visualization libraries needed at runtime
-
-This ensures that:
-- The application is lightweight and fast to set up
-- Production environments are not polluted with research-only packages
-- Reviewers can run the system without installing ML toolchains
-
-**Use this file to run the app.**
-
-```bash
-pip install -r requirements.txt
-
-
-Design Rationale
-
-This separation reflects how real-world analytics platforms operate:
-
-Engineering systems prioritize stability, speed, and minimal dependencies
-
-Data science workflows prioritize flexibility, experimentation, and tooling
-
-The two evolve at different speeds and should not be tightly coupled
-
-By separating dependencies:
-
-Production systems remain clean and reproducible
-
-Data scientists can iterate without affecting runtime stability
-
-Interview reviewers can clearly see architectural intent
+| Layer | Technologies |
+|---|---|
+| **Backend Engine** | FastAPI, DuckDB, Pandas, NumPy, Pydantic, Uvicorn |
+| **Frontend Framework** | React 18, Vite, Tailwind CSS, Lucide Icons, Recharts |
+| **Database & Analytics** | DuckDB (vectorized OLAP), Parquet, CSV |
+| **Typography & UI** | Google Font Roboto (18px base root), Tabular Figures |
