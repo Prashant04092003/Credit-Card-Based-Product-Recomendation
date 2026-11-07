@@ -40,20 +40,43 @@ app.include_router(recommendations.router)
 app.include_router(fraud.router)
 app.include_router(insights.router)
 
-@app.get("/", tags=["Health"])
-def root():
+@app.get("/health", tags=["Health"])
+def health_check():
     return {
-        "status": "online",
-        "message": "Credit360 Intelligence Platform API is active.",
-        "documentation": "/docs",
+        "status": "healthy",
         "total_transactions_indexed": 24386900,
         "total_customers_indexed": 2000,
         "total_cards_indexed": 6146
     }
 
-@app.get("/health", tags=["Health"])
-def health_check():
-    return {"status": "healthy"}
+# Serve compiled React frontend if present in production
+import os
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+DIST_DIR = Path(__file__).resolve().parent.parent / "frontend-react" / "dist"
+
+if DIST_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_frontend(full_path: str):
+        file_path = DIST_DIR / full_path
+        if file_path.exists() and file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(DIST_DIR / "index.html")
+else:
+    @app.get("/", tags=["Health"])
+    def root():
+        return {
+            "status": "online",
+            "message": "Credit360 Intelligence Platform API is active.",
+            "documentation": "/docs",
+            "total_transactions_indexed": 24386900,
+            "total_customers_indexed": 2000,
+            "total_cards_indexed": 6146
+        }
 
 if __name__ == "__main__":
     import uvicorn
