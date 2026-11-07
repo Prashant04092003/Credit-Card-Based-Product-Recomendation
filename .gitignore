@@ -3,6 +3,21 @@ data/raw/
 data/processed/
 *.csv
 *.xlsx
+*.parquet
+*.duckdb
+*.duckdb.wal
+
+# OS Files
+.DS_Store
+*/.DS_Store
+
+# Frontend
+frontend-react/node_modules/
+frontend-react/dist/
+frontend-react/.vite/
+node_modules/
+dist/
+.vite/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -11,6 +26,7 @@ data/processed/
 __pycache__/
 *.pyc
 
-# Environment
+# Environment & Temp
 .env
 venv/
+scratch/

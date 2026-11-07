@@ -1,421 +1,138 @@
-# Credit Card Based Product Recommendation System
+# Credit360 Enterprise — Credit Card Recommendation & Portfolio Intelligence Platform
 
-An end-to-end Credit Card Intelligence Pipeline covering:
-
-1. Fraud Detection (Transaction-Level Risk Modeling)  
-2. Customer Segmentation (User-Level Behavioral Clustering)  
-3. Credit Card Recommendation System (Hybrid Neural Ranking Model)  
-
-This project simulates a production-grade banking system where risk, behavior, and product alignment are integrated into a single scalable framework.
+Credit360 Enterprise is an institutional-grade credit card portfolio intelligence, customer profiling, and product comparison platform. It operates directly over **24,386,900 transaction records**, **2,000 customer accounts**, and **6,146 issued cards**, benchmarked against a competitive market universe of **354 commercial credit cards**.
 
 ---
 
-# 1. Fraud Detection Module
+## Architecture Overview
 
-## Overview
+```mermaid
+flowchart TD
+    subgraph DataLayer [Data & Storage Engine (Zero Sampling)]
+        A[master_transactions.parquet<br/>24,386,900 Records] --> DB[(DuckDB OLAP Engine<br/>credit360.duckdb)]
+        B[users_master.csv<br/>2,000 Accounts] --> DB
+        C[cards_master.csv<br/>6,146 Cards] --> DB
+        D[commercial_catalog<br/>354 Market Products] --> DB
+    end
 
-The Fraud Detection module operates at the **transaction level** and identifies anomalous credit card activity under extreme class imbalance and real-world operational constraints.
+    subgraph BackendLayer [FastAPI High-Performance Engine - Port 8000]
+        DB --> BE[FastAPI REST API]
+        BE --> R1[/api/portfolio]
+        BE --> R2[/api/customers]
+        BE --> R3[/api/segments]
+        BE --> R4[/api/cards/similarity]
+        BE --> R5[/api/recommendations]
+        BE --> R6[/api/fraud]
+    end
 
-Rather than relying on raw transaction attributes, the model captures **behavioral deviations**, which are central to modern fraud detection systems.
-
----
-
-## Feature Engineering Strategy
-
-Fraud detection is driven by historical behavioral features, including:
-
-- Transaction velocity (transactions in last 1h / 24h)
-- Temporal gaps between transactions
-- Deviation from user spending baseline
-- First-time merchant and MCC indicators
-- Time-of-day and channel usage patterns
-
-These features model behavioral change instead of static transaction characteristics.
-
----
-
-## Model: LightGBM Classifier
-
-A **LightGBM classifier** serves as the primary fraud engine due to:
-
-- Strong performance on tabular financial data
-- Ability to model non-linear interactions
-- Scalability to millions of transactions
-- Interpretability for compliance and audit use cases
-
-The model outputs a continuous fraud risk score, which is mapped into business risk bands:
-
-- Low  
-- Medium  
-- High  
-- Critical  
-
-Each band corresponds to operational actions:
-
-- Approve  
-- Monitor  
-- OTP Verification  
-- Decline  
+    subgraph FrontendLayer [React UI - Port 5173]
+        R1 & R2 & R3 & R4 & R5 & R6 --> FE[React 18 + Vite + Tailwind CSS]
+        FE --> M1[Portfolio Demographics & Spend]
+        FE --> M2[Customer Profiles 360° & Wallet]
+        FE --> M3[Customer Personas - 6 Macro Groups]
+        FE --> M4[Card Comparison & Market Directory]
+        FE --> M5[Rewards Value Calculator]
+        FE --> M6[Customer Risk Profiles]
+    end
+```
 
 ---
 
-## Graph-Based Exploration
+## Core Platform Modules
 
-An experimental **Graph Neural Network (GNN)** was implemented on high-risk subsets to explore relational fraud propagation patterns.
+### 1. Portfolio Overview & Demographics
+- **Total Population Scale**: Analyzes **$1,064,098,117.16** ($1.06B) in volume across **24,386,900 verified transactions** and **2,000 customer accounts**.
+- **Visual Analytics**: 16 super-categories spend distribution, card network market share (Visa, Mastercard, Amex, Discover), 48-month longitudinal spend growth curve (1996–2020), and category CSV export.
 
-This acts as an enrichment layer rather than the core production model.
+### 2. Customer Profiles (360°) & Digital Wallet
+- **Prominent Command Search**: Instant lookup for any customer across all 2,000 accounts by name or ID (e.g., `Jade Green` / `25`).
+- **Demographics & Financial Metrics**: Experian bureau tiers, FICO scores, annual income, total debt, and debt-to-income (DTI) ratios.
+- **Digital Cards in Wallet**: High-contrast card visualizer rendering brand, cardholder name, credit limits, card age, expiry, and chip security flags.
+- **Recommendations**: Top tailored upgrades ranked by projected net annual reward yield, APR, annual fee, and spend multipliers.
+- **Transaction Audit Ledger**: Filterable, paginated ledger of historical cleared and flagged transactions with CSV export.
 
----
+### 3. Customer Personas & Spending Patterns (6 Macro Cohorts)
+Maps 100% of accounts (2,000 customers) into exactly 6 distinct, balanced behavioral cohorts:
+1. **Dining & Entertainment Enthusiasts** (343 accounts)
+2. **Retail & Household Essentials Spenders** (300 accounts)
+3. **Affluent Multi-Category & Travel Spenders** (562 accounts)
+4. **Fuel & Daily Commute Power Users** (115 accounts)
+5. **Digital & Lifestyle Natives** (452 accounts)
+6. **Budget-Conscious Conservative Users** (228 accounts)
 
-## Fraud Output Artifact
+*Clicking any persona card opens a searchable, paginated customer roster. Clicking any customer row opens their full 360° profile.*
 
-Final transaction-level output includes:
+### 4. Commercial Card Comparison & Market Directory
+Structured into 3 dedicated sub-tabs:
+- **Head-to-Head Comparison**: Select any two commercial cards to inspect annual fees, base rates, sign-up bonuses, and category reward multipliers side-by-side, with advantage winners highlighted.
+- **Card Substitutes & Alternatives**: Select any of the 354 commercial cards to view its 3 closest market rivals with fee differentials, plus a one-click button to compare head-to-head.
+- **Commercial Card Directory**: Filter and search all 354 commercial cards by network (Visa, Mastercard, American Express, Discover) and annual fee tier ($0 No-Fee, $1–$100, $100+ Premium).
 
-- `fraud_score`
-- `fraud_band`
-- `fraud_action`
+### 5. Card Rewards & Value Calculator (What-If Simulator)
+- **Interactive Budget Sliders**: Adjust monthly budget allocations across Dining, Groceries, Travel, Shopping, and Utilities.
+- **Dynamic Yield Simulation**: Recalculates net annual reward value across all 354 commercial cards in real time with interactive yield rankings.
 
-This artifact feeds downstream segmentation and recommendation modules, ensuring risk-aware growth decisions.
-
----
-
-# 2. Customer Segmentation (User-Level Behavioral Modeling)
-
-## Objective
-
-The goal of segmentation is to group customers based on:
-
-- Behavioral spending patterns  
-- Credit capacity  
-- Aggregated risk signals  
-
-Segmentation is performed at the **user level**, since business decisions are customer-centric.
-
----
-
-## Why User-Level Segmentation?
-
-- Transaction-level clustering is unstable and noisy  
-- Card-level clustering fragments multi-card customers  
-
-Instead, transaction data, card data, and fraud signals are aggregated into a **single user-level feature table (1 row per user).**
+### 6. Customer Risk Profiles & Historical Dispute Activity
+- **Ground-Truth Exposure**: Tracks **29,757 confirmed unauthorized transactions** ($3,231,338.63 total exposure) and **388,431 terminal decline/technical errors**.
+- **Historical Analysis**: Monthly breach trajectory (volume vs. incident count) and category vulnerability ranking with CSV export.
 
 ---
 
-## Feature Engineering
+## Design System & Typography
 
-### Behavioral Spending Features
-
-Transactions are mapped via MCC codes into nine business categories:
-
-- Groceries  
-- Dining & Food  
-- Transport & Fuel  
-- Retail & Apparel  
-- Healthcare & Wellness  
-- Utilities & Bills  
-- Digital Subscriptions  
-- Entertainment & Leisure  
-- Travel & Lodging  
-
-For each user, the following metrics are computed:
-
-- `txn_count`
-- `total_spend`
-- `avg_txn_amount`
-- `spend_cv` (volatility)
-- `category_entropy` (diversification)
-- `share_<category>` (category spend share)
-
-These features represent lifestyle intensity and preference structure.
+- **Readability**: Built on Google Font **Roboto** with an elevated **18px base root** (`html { font-size: 18px }`). Eliminates cramped 6–8pt micro-fonts.
+- **Color Palette**: Pitch-black canvas (`#000000`), matte carbon panels (`#090A0D`), hairline borders (`#1E2028`), Amex Royal Blue (`#006FCF`), and tabular numbers (`tabular-nums`).
+- **Command Search**: Center-stage 760px wide search bar (`h-14`) with `⌘K` keyboard accelerator and large autocomplete cards.
+- **Terminology**: Ground-truth historical data labeled accurately ("Customer Accounts", "Population Ledger", "Transaction Audit Ledger").
 
 ---
 
-### Credit Capacity Features
+## Quickstart & Setup
 
-From card portfolio data:
+### 1. Prerequisites
+- Python 3.11+
+- Node.js 18+ and npm
 
-- `num_cards`
-- `total_credit_limit`
-- `avg_credit_limit`
+### 2. Backend Setup
+```bash
+# Install Python dependencies
+pip install -r requirements-eng.txt
 
-These describe exposure and financial maturity.
+# Start FastAPI server on port 8000
+python3 -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+```
+API Documentation (Swagger UI): [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
----
+### 3. Frontend Setup
+```bash
+# Navigate to frontend and install dependencies
+cd frontend-react
+npm install
 
-### Aggregated Risk Signals
+# Start Vite dev server on port 5173
+npm run dev
+```
+Web Console: [http://127.0.0.1:5173](http://127.0.0.1:5173)
 
-Fraud signals are safely aggregated per user:
-
-- `avg_fraud_score`
-- `% high-risk`
-- `% critical-risk`
-
-Risk is treated as a behavioral trait, not a filtering condition.
-
----
-
-### Why FICO Was Excluded from Clustering
-
-FICO score was intentionally excluded because:
-
-- It is a policy variable, not behavioral
-- It would dominate cluster formation
-- It is reserved for eligibility gating in recommendations
-
----
-
-## Clustering Model
-
-### Rejected Approach: K-Means
-
-K-Means was discarded due to:
-
-- Instability across runs
-- Sensitivity to heavy-tailed financial features
-- Hard cluster boundaries
-- Poor handling of compositional spending shares
+### 4. Running Automated Tests
+```bash
+PYTHONPATH=. python3 tests/test_full_integration.py
+```
+Validates all 9 core integration benchmarks:
+- Portfolio summary and category aggregations (24.38M transactions)
+- Customer 360 profile and multi-card wallet extraction
+- 6 macro persona clustering across all 2,000 customer accounts
+- Commercial catalog (354 cards), substitutes, and head-to-head comparison
+- What-If reward yield simulation engine
+- Customer risk profile telemetry and dispute history
 
 ---
 
-### Final Model: Gaussian Mixture Model (GMM)
-
-Gaussian Mixture Models were selected because they:
-
-- Provide soft (probabilistic) cluster membership  
-- Handle non-spherical cluster shapes  
-- Model covariance between features  
-- Represent overlapping lifestyle patterns  
-
----
-
-## Cluster Selection
-
-The number of clusters was selected using **Bayesian Information Criterion (BIC)** to balance fit and complexity.
-
-Final choice:
-
-**k = 7 clusters**
-
----
-
-## Resulting Personas
-
-Seven interpretable behavioral segments were identified, including:
-
-- Retail-Centric Lifestyle Spenders  
-- Dining & Convenience Seekers  
-- Fuel & Commute Heavy Users  
-- Digital & Subscription Natives  
-- Travel & Experience Spenders  
-- Budget-Conscious Essentials Users  
-- High-Capacity Risk-Edge Users  
-
-Each persona reflects a combination of:
-
-- Spending intensity  
-- Lifestyle preference  
-- Credit capacity  
-- Risk exposure  
-
----
-
-## Segmentation Output Artifact
-
-`user_level_segmentation_features.csv`
-
-Characteristics:
-
-- One row per user  
-- All engineered behavioral features  
-- Cluster and persona labels  
-- FICO included for downstream eligibility logic  
-
-This file serves as the single source of truth for recommendation modeling.
-
----
-
-# 3. Credit Card Recommendation System
-
-## Overview
-
-The Recommendation System is the final stage of the pipeline.
-
-It recommends credit cards based on:
-
-- Behavioral spending patterns  
-- Credit capacity and FICO score  
-- Aggregated fraud risk  
-- Cluster persona alignment  
-- Card reward structure and eligibility  
-
-The system uses a **Hybrid Neural Collaborative Filtering (Hybrid NCF)** architecture.
-
----
-
-## Key Challenges
-
-- No historical user–card interaction labels  
-- High-dimensional behavioral features  
-- Strict eligibility constraints  
-- Need for interpretability  
-- Cold-start stability  
-
----
-
-## Data Inputs
-
-### 1. User-Level Features
-
-`user_recommendation.csv`
-
-Contains:
-
-- Spending aggregates  
-- Category shares  
-- Spending entropy  
-- Credit capacity features  
-- Fraud aggregates  
-- FICO score  
-- Cluster ID  
-
----
-
-### 2. Card Master Table
-
-`card_master_table.csv`
-
-Includes:
-
-- Card ID  
-- Brand and tier  
-- Annual fee and APR  
-- Reward structure  
-- FICO eligibility range  
-- Cluster alignment metadata  
-
----
-
-### 3. Pairwise Training Data
-
-`pairwise_training_data.csv`
-
-Contains:
-
-- `user_id`
-- `pos_card_id`
-- `neg_card_id`
-
-Generated using compatibility scoring.
-
----
-
-## Weak Supervision Framework
-
-Since no historical labels exist:
-
-1. Compatibility scores are generated using:
-   - Reward alignment  
-   - Category match  
-   - Risk penalty  
-   - Cluster alignment  
-   - FICO eligibility  
-
-2. Scores are converted into pairwise ranking tuples:
-   `(user, preferred_card, less_preferred_card)`
-
-This enables learning relative preferences.
-
----
-
-## Model Architecture: Hybrid Neural Collaborative Filtering
-
-The architecture combines:
-
-### Latent Embeddings
-- User embedding  
-- Card embedding  
-
-### Explicit Feature Encoders
-- MLP for user features  
-- MLP for card features  
-
-### Interaction Network
-Concatenated representations are passed through an MLP to produce:
-
-`score(user, card)`
-
----
-
-## Training Strategy
-
-The model is trained using:
-
-- Pairwise ranking objective  
-- Bayesian Personalized Ranking (BPR) loss  
-
-Loss:
-
-L = -log(sigmoid(score_pos - score_neg))
-
-Users are split at the user level to prevent data leakage.
-
----
-
-## Evaluation Metrics
-
-- NDCG@K  
-- Ranking consistency across validation users  
-
-Loss alone is not used to judge model quality.
-
----
-
-## Inference Pipeline
-
-For each user:
-
-1. Filter eligible cards using FICO and policy rules  
-2. Score all eligible cards  
-3. Apply risk-aware penalty  
-4. Optionally enforce diversity constraint  
-5. Return Top-10 ranked cards  
-
-Final output includes:
-
-- `user_id`
-- `cluster`
-- `persona`
-- `rank`
-- `card_id`
-- `card_name`
-- `brand`
-- `card_tier`
-- `annual_fee`
-- `apr`
-- `final_score`
-
----
-
-## Explainability
-
-Recommendations are explainable through:
-
-- Persona alignment  
-- Reward-category matching  
-- Risk transparency  
-- Cluster-based reasoning  
-
----
-
-# Final Summary
-
-The Credit Card Based Product Recommendation System:
-
-- Detects fraud using behavioral modeling  
-- Segments customers using probabilistic clustering  
-- Recommends products using Hybrid Neural Collaborative Filtering  
-- Enforces eligibility and risk constraints  
-- Maintains interpretability and production realism  
-
-This project simulates a real-world banking intelligence pipeline from raw transaction data to deployable recommendation output.
+## Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| **Backend Engine** | FastAPI, DuckDB, Pandas, NumPy, Pydantic, Uvicorn |
+| **Frontend Framework** | React 18, Vite, Tailwind CSS, Lucide Icons, Recharts |
+| **Database & Analytics** | DuckDB (vectorized OLAP), Parquet, CSV |
+| **Typography & UI** | Google Font Roboto (18px base root), Tabular Figures |
