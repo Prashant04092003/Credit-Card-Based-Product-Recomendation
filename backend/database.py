@@ -10,6 +10,11 @@ class Database:
         # Connect in read-only mode for high concurrency
         self.con = duckdb.connect(str(DB_PATH), read_only=True)
         
+        # Dynamically bind transactions view to local environment path (portable for Docker/Cloud/Local)
+        parquet_path = BASE_DIR / "data" / "raw" / "master_transactions.parquet"
+        if parquet_path.exists():
+            self.con.execute(f"CREATE OR REPLACE TEMP VIEW transactions AS SELECT * FROM '{parquet_path}'")
+        
         # Load reference dataframes into memory for instant O(1) dictionary lookups
         self.users_master = self.con.execute("SELECT * FROM users_master").df()
         self.cards_master = self.con.execute("SELECT * FROM cards_master").df()
@@ -21,7 +26,11 @@ class Database:
 
     def get_cursor(self):
         """Returns an isolated thread cursor to avoid concurrent query collisions."""
-        return self.con.cursor()
+        cur = self.con.cursor()
+        parquet_path = BASE_DIR / "data" / "raw" / "master_transactions.parquet"
+        if parquet_path.exists():
+            cur.execute(f"CREATE OR REPLACE TEMP VIEW transactions AS SELECT * FROM '{parquet_path}'")
+        return cur
 
     @classmethod
     def get_instance(cls):
