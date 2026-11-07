@@ -113,13 +113,13 @@ export default function FraudRadar() {
           <div>
             <div className="flex items-center space-x-2 text-sm font-semibold text-rose-400 uppercase tracking-wider mb-1.5">
               <ShieldAlert className="w-4 h-4" />
-              <span>FRAUD SURVEILLANCE & RISK RADAR · 24.38M TRANSACTIONS MONITORED</span>
+              <span>CUSTOMER RISK PROFILES & DISPUTES · 24.38M TRANSACTIONS</span>
             </div>
             <h1 className="text-3xl font-bold text-white tracking-tight">
-              Fraud Surveillance & Vulnerability Risk Console
+              Customer Risk Profiles & Historical Dispute Activity
             </h1>
             <p className="text-base text-zinc-300 mt-1 max-w-4xl">
-              Comprehensive tracking of 29,757 confirmed fraud breaches ($3.23M total exposure) and 388,431 terminal error events across all 6,146 active cards.
+              Audit analysis of 29,757 confirmed unauthorized transactions ($3.23M total exposure) and 388,431 decline/error events across all 6,146 portfolio cards.
             </p>
           </div>
           <button
