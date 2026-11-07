@@ -2,11 +2,10 @@
 
 Credit360 Enterprise is an institutional-grade credit card portfolio intelligence, customer profiling, and product comparison platform. It operates directly over **24,386,900 transaction records**, **2,000 customer accounts**, and **6,146 issued cards**, benchmarked against a competitive market universe of **354 commercial credit cards**.
 
----
 
 ## Architecture Overview
-
-```mermaid
+---
+mermaid
 flowchart TD
     subgraph DataLayer [Data & Storage Engine (Zero Sampling)]
         A[master_transactions.parquet<br/>24,386,900 Records] --> DB[(DuckDB OLAP Engine<br/>credit360.duckdb)]
@@ -14,7 +13,7 @@ flowchart TD
         C[cards_master.csv<br/>6,146 Cards] --> DB
         D[commercial_catalog<br/>354 Market Products] --> DB
     end
-
+---
     subgraph BackendLayer [FastAPI High-Performance Engine - Port 8000]
         DB --> BE[FastAPI REST API]
         BE --> R1[/api/portfolio]
@@ -34,9 +33,9 @@ flowchart TD
         FE --> M5[Rewards Value Calculator]
         FE --> M6[Customer Risk Profiles]
     end
-```
-
 ---
+
+
 
 ## Core Platform Modules
 
