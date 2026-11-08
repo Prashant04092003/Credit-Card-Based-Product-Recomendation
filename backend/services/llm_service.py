@@ -39,7 +39,7 @@ class LLMService:
 You are a Principal Credit Risk & Portfolio Officer at a premier retail bank.
 Write an executive decision memo for the following customer:
 
-CUSTOMER DOSSIER:
+CUSTOMER PROFILE:
 - Customer: {d.get('person')} (User ID: {d.get('user_id')}, Age: {d.get('age')}, City: {d.get('city')}, {d.get('state')})
 - Financials: Income ${d.get('yearly_income'):,.2f} | FICO: {d.get('fico_score')} ({d.get('fico_band')}) | DTI: {d.get('debt_income_ratio')}
 - Total Lifetime Spend: ${s.get('total_spend'):,.2f} across {s.get('total_transactions'):,} transactions

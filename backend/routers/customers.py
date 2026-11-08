@@ -138,12 +138,12 @@ def get_customer_360(user_id: int):
     """
     Returns the comprehensive 130-signal Customer 360 profile for any user.
     """
-    dossier = customer_360_service.get_customer_360(user_id)
-    if not dossier:
+    profile = customer_360_service.get_customer_360(user_id)
+    if not profile:
         raise HTTPException(status_code=404, detail=f"Customer with ID {user_id} not found.")
     return {
         "status": "success",
-        "data": dossier
+        "data": profile
     }
 
 @router.get("/{user_id}/cards")
