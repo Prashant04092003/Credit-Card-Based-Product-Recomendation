@@ -91,7 +91,7 @@ Trained on a strict temporal 80/20 train/validation split (80% historical traini
 
 To balance fraud loss prevention against customer transaction declines, the model threshold was calibrated across operating points:
 
-| Target Recall | Decision Threshold ($\tau$) | Precision | Actual Recall | True Positives (TP) | False Positives (FP) | False Negatives (FN) | True Negatives (TN) | Operational Action |
+| Target Recall | Decision Threshold (τ) | Precision | Actual Recall | True Positives (TP) | False Positives (FP) | False Negatives (FN) | True Negatives (TN) | Operational Action |
 |---|---|---|---|---|---|---|---|---|
 | **90% Recall** | 0.001051 | 0.0013 | 90.03% | 4,351 | 3,354,092 | 482 | 1,518,450 | Aggressive fraud block |
 | **80% Recall** | 0.001102 | 0.0018 | 80.26% | 3,879 | 2,098,065 | 954 | 2,774,477 | Balanced step-up SMS OTP |
@@ -105,12 +105,12 @@ To predict expected monthly spending volume and optimize recommended credit card
 
 #### Regression Metrics Table
 
-| Model | $R^2$ Score | RMSE ($) | MAE ($) | MAPE (%) | Primary Strength |
+| Model | R² Score | RMSE (USD) | MAE (USD) | MAPE (%) | Primary Strength |
 |---|---|---|---|---|---|
-| **Ordinary Least Squares (OLS)** | 0.612 | 412.50 | 289.40 | 18.4% | Linear baseline interpretability |
-| **Ridge Regression ($\alpha=1.0$)** | 0.614 | 409.80 | 287.10 | 18.1% | Multicollinearity regularization |
-| **Random Forest Regressor** | 0.748 | 324.60 | 210.50 | 13.2% | Non-linear category interactions |
-| **LightGBM Regressor (Production)** | **0.782** | **298.15** | **184.20** | **11.6%** | Fast inference, robust to spend spikes |
+| **Ordinary Least Squares (OLS)** | 0.612 | $412.50 | $289.40 | 18.4% | Linear baseline interpretability |
+| **Ridge Regression (α = 1.0)** | 0.614 | $409.80 | $287.10 | 18.1% | Multicollinearity regularization |
+| **Random Forest Regressor** | 0.748 | $324.60 | $210.50 | 13.2% | Non-linear category interactions |
+| **LightGBM Regressor (Production)** | **0.782** | **$298.15** | **$184.20** | **11.6%** | Fast inference, robust to spend spikes |
 
 ---
 
@@ -120,14 +120,14 @@ To transform 2,000 heterogeneous customer accounts into actionable business pers
 
 #### Cluster Optimization Metrics
 
-| Number of Clusters ($k$) | Silhouette Score | Inertia / SSE | Davies-Bouldin Index | Calinski-Harabasz Index | Decision Status |
+| Number of Clusters (k) | Silhouette Score | Inertia / SSE | Davies-Bouldin Index | Calinski-Harabasz Index | Decision Status |
 |---|---|---|---|---|---|
-| $k = 3$ | 0.312 | 18,420 | 1.84 | 412.5 | Under-segmented |
-| $k = 4$ | 0.354 | 14,810 | 1.62 | 468.2 | Broad groups |
-| $k = 5$ | 0.389 | 12,230 | 1.48 | 512.4 | Good balance |
-| **$k = 6$ (Selected)** | **0.421** | **9,845** | **1.31** | **589.6** | **Optimal business persona separation** |
-| $k = 7$ | 0.378 | 8,910 | 1.39 | 540.1 | Persona fragmentation |
-| $k = 8$ | 0.342 | 8,120 | 1.45 | 502.8 | Overfitting small cohorts |
+| k = 3 | 0.312 | 18,420 | 1.84 | 412.5 | Under-segmented |
+| k = 4 | 0.354 | 14,810 | 1.62 | 468.2 | Broad groups |
+| k = 5 | 0.389 | 12,230 | 1.48 | 512.4 | Good balance |
+| **k = 6 (Selected)** | **0.421** | **9,845** | **1.31** | **589.6** | **Optimal business persona separation** |
+| k = 7 | 0.378 | 8,910 | 1.39 | 540.1 | Persona fragmentation |
+| k = 8 | 0.342 | 8,120 | 1.45 | 502.8 | Overfitting small cohorts |
 
 #### Production Macro Persona Distribution
 
@@ -145,8 +145,16 @@ To transform 2,000 heterogeneous customer accounts into actionable business pers
 ### D. Neural Collaborative Filtering (NCF) & BPR Card Recommendation
 
 To learn non-linear customer-to-card reward compatibility, a Neural Collaborative Filtering (NCF) architecture was trained utilizing **Bayesian Personalized Ranking (BPR) Loss**:
-$$\mathcal{L}_{\text{BPR}} = - \sum_{(u, i, j)} \ln \sigma(\hat{x}_{ui} - \hat{x}_{uj})$$
-Where $\hat{x}_{ui}$ is the affinity score between user $u$ and positive card candidate $i$, and $\hat{x}_{uj}$ is the score against negative candidate $j$.
+
+```
+Loss_BPR = - ∑₍ᵤ, ᵢ, ⱼ₎ ln σ( x̂_ui - x̂_uj )
+```
+
+**Where:**
+- `x̂_ui` = predicted affinity score between customer `u` and positive candidate card `i`
+- `x̂_uj` = predicted affinity score between customer `u` and negative candidate card `j`
+- `σ(·)` = sigmoid activation function
+- Minimizes pairwise ranking loss so preferred cards rank higher than non-preferred alternatives.
 
 #### Training Progression & Validation Loss
 
@@ -165,7 +173,7 @@ Where $\hat{x}_{ui}$ is the affinity score between user $u$ and positive card ca
 The commercial card similarity engine matches any consumer's 24-year spending history against 354 market credit card options. It operates through three mathematical steps:
 
 ### A. 70-Dimensional Behavioral Feature Vector
-For each customer, a 70-dimensional feature vector $\mathbf{x}_u \in \mathbb{R}^{70}$ is computed from cleared transactions and mapped into 5 strategic decision pillars:
+For each customer, a 70-dimensional feature vector `x_u ∈ ℝ⁷⁰` is computed from cleared transactions and mapped into 5 strategic decision pillars:
 
 1. **Merchant Loyalty & Retailer Stickiness (Weight: 38.4%)**: Concentration of spend in top 3 merchants (`top3_merchants_pct`), unique merchant count, and category entropy.
 2. **Spend Velocity & Cadence (Weight: 24.1%)**: 30-day velocity, weekend vs. weekday spending ratio, ticket size standard deviation (`spend_cv`).
@@ -174,22 +182,41 @@ For each customer, a 70-dimensional feature vector $\mathbf{x}_u \in \mathbb{R}^
 5. **Account Stability & Risk Record (Weight: 8.8%)**: Historical dispute rate, terminal error frequency, and PIN security history.
 
 ### B. Collinearity Decoupling
-Features exhibiting Pearson correlation $|r| > 0.80$ were identified and decoupled across 17 redundant pairs (e.g., decoupling `total_spend` from `txn_count` by normalizing into average ticket size and category volume shares), preventing mathematical feature distortion in Euclidean distance rankings.
+Features exhibiting Pearson correlation `|r| > 0.80` were identified and decoupled across 17 redundant pairs (e.g., decoupling `total_spend` from `txn_count` by normalizing into average ticket size and category volume shares), preventing mathematical feature distortion in Euclidean distance rankings.
 
 ### C. Net Financial Reward Yield Formulation
-For any customer $u$ and card $c$, the projected net annual reward yield is calculated as:
-$$\text{Net Reward Value}(u, c) = \left( \sum_{k \in \text{Categories}} \text{Annual Spend}_{u, k} \times \text{Multiplier}_{c, k} \times \text{Point Value} \right) - \text{Annual Fee}_c$$
-Where point valuations are benchmarked at $0.01 per standard point ($0.0125 for premium travel transfer partners).
+For any customer `u` and card `c`, the projected net annual reward yield is calculated as:
+
+```
+Net Annual Reward Value = [ ∑ (Annual Spend in Category_k × Multiplier_(c, k) × Point Value) ] - Annual Fee_c
+```
+
+**Where:**
+- Point valuations are benchmarked at 1.0¢/pt ($0.010/point) for standard cashback/points, and 1.25¢/pt ($0.0125/point) for premium travel transfer partner currencies.
 
 ### D. Head-to-Head Comparator Algorithm
 Compares Option A vs. Option B by computing category yield differentials:
-$$\Delta Y_k = (\text{Multiplier}_{B, k} - \text{Multiplier}_{A, k})$$
-Categories where $\Delta Y_k > 0$ identify Option B advantages, while $\Delta Y_k < 0$ identify Option A advantages. Annual fee differentials are netted against bonus point values to highlight the payback break-even spend.
+
+```
+Δ Yield_k = Multiplier_(Card B, k) - Multiplier_(Card A, k)
+```
+
+- When `Δ Yield_k > 0`: Card Option B delivers higher rewards in Category `k`.
+- When `Δ Yield_k < 0`: Card Option A delivers higher rewards in Category `k`.
+- Annual fee differential `Δ Fee = Fee_B - Fee_A` determines the net annual break-even spend threshold.
 
 ### E. Direct Competitor Substitutes (Nearest-Neighbor Retrieval)
 Locates the 3 closest rival cards from competing card issuers using normalized Euclidean distance over fee and multiplier dimensions:
-$$D(c_1, c_2) = \sqrt{w_{\text{fee}} \left( \frac{\text{Fee}_1 - \text{Fee}_2}{\sigma_{\text{fee}}} \right)^2 + \sum_{k} w_k \left( m_{1, k} - m_{2, k} \right)^2}$$
-Rivals are constrained to different issuers (e.g., matching a Chase Sapphire card to an Amex Gold or Capital One Venture X rival) and tagged with fee difference indicators (`Exact Fee Match`, `+$50`, `-$30 Lower`).
+
+```
+Distance(Card A, Card B) = √[ w_fee × ((Fee_A - Fee_B) / σ_fee)² + ∑ w_k × (Multiplier_(A, k) - Multiplier_(B, k))² ]
+```
+
+**Where:**
+- `w_fee` = fee tier penalty weight (penalizes cards in disparate fee brackets)
+- `w_k` = category importance weight based on market spend volume
+- `σ_fee` = standard deviation of annual fees across the 354 commercial cards
+- Rivals are constrained to different issuers (e.g., matching a Chase Sapphire card to an Amex Gold or Capital One Venture X rival) and tagged with fee difference indicators (`Exact Fee Match`, `+$50`, `-$30 Lower`).
 
 ---
 
@@ -223,12 +250,12 @@ The entire data store is hosted in an **on-disk, persistent DuckDB database** (`
 | Table Name | Primary Key | Foreign Keys | Row Count | Storage Medium | Purpose & Query Patterns |
 |---|---|---|---|---|---|
 | **`users_master`** | `user_id` | *None* | 2,000 | DuckDB Native Table | Customer profile lookups, demographic filtering, FICO and debt-to-income tiering. |
-| **`cards_master`** | `(User, CARD INDEX)` | `User` $\rightarrow$ `users_master.user_id` | 6,146 | DuckDB Native Table | Digital wallet cards, credit limits, card brands, chip status, and dark web flags. |
-| **`transactions`** | `(user, card, Transaction_Timestamp)` | `user` $\rightarrow$ `users_master.user_id`<br/>`card` $\rightarrow$ `cards_master.card_id` | 24,386,900 | Columnar Parquet View | Complete audit ledger, category aggregations, longitudinal trends, and fraud analytics. |
+| **`cards_master`** | `(User, CARD INDEX)` | `User` → `users_master.user_id` | 6,146 | DuckDB Native Table | Digital wallet cards, credit limits, card brands, chip status, and dark web flags. |
+| **`transactions`** | `(user, card, Transaction_Timestamp)` | `user` → `users_master.user_id`<br/>`card` → `cards_master.card_id` | 24,386,900 | Columnar Parquet View | Complete audit ledger, category aggregations, longitudinal trends, and fraud analytics. |
 | **`commercial_catalog`** | `card_id` | *None* | 354 | DuckDB Native Table | 354 commercial cards, annual fees, reward multipliers, base rates, and bonus values. |
-| **`segmentation`** | `user_id` | `user_id` $\rightarrow$ `users_master.user_id` | 2,000 | DuckDB Native Table | Maps 100% of accounts into one of the 6 macro personas. |
-| **`recommendations`** | `rec_id` | `user_id` $\rightarrow$ `users_master.user_id`<br/>`card_id` $\rightarrow$ `commercial_catalog.card_id` | 11,517 | DuckDB Native Table | Pre-computed and cached top 5 recommended card upgrades per customer. |
-| **`card_scorecard`** | `card_id` | `card_id` $\rightarrow$ `cards_master.card_id` | 6,139 | DuckDB Native Table | Historical performance and usage metrics per issued card. |
+| **`segmentation`** | `user_id` | `user_id` → `users_master.user_id` | 2,000 | DuckDB Native Table | Maps 100% of accounts into one of the 6 macro personas. |
+| **`recommendations`** | `rec_id` | `user_id` → `users_master.user_id`<br/>`card_id` → `commercial_catalog.card_id` | 11,517 | DuckDB Native Table | Pre-computed and cached top 5 recommended card upgrades per customer. |
+| **`card_scorecard`** | `card_id` | `card_id` → `cards_master.card_id` | 6,139 | DuckDB Native Table | Historical performance and usage metrics per issued card. |
 
 ---
 
